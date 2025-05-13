@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>画像生成 & LLM UI</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+    <h2>画像生成</h2>
+    <form id="img-form">
+        プロンプト: <input type="text" id="img-prompt" name="prompt">
+        <button type="submit">生成</button>
+    </form>
+    <div id="img-result"></div>
+    <h2>LLM呼び出し</h2>
+    <form id="llm-form">
+        プロンプト: <input type="text" id="llm-prompt" name="prompt">
+        <button type="submit">送信</button>
+    </form>
+    <div id="llm-result"></div>
+    <script>
+    document.getElementById('img-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const prompt = document.getElementById('img-prompt').value;
+        const res = await fetch('/generate-image', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        const data = await res.json();
+        document.getElementById('img-result').innerHTML = data.image_url
+            ? `<img src="${data.image_url}" style="max-width:256px;">`
+            : '生成失敗';
+    };
+    document.getElementById('llm-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const prompt = document.getElementById('llm-prompt').value;
+        const res = await fetch('/llm', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        const data = await res.json();
+        document.getElementById('llm-result').innerText = data.result || '失敗';
+    };
+    </script>
+</body>
+</html>

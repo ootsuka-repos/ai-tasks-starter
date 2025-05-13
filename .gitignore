@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VSCode
+.vscode/
+
+# 環境変数
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+# 生成物
+outputs/
