@@ -53,6 +53,34 @@ img {
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
+.group-tab-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.group-tab {
+  padding: 6px 20px;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  font-size: 1em;
+  cursor: pointer;
+  margin-right: 4px;
+  font-weight: bold;
+  color: #fff;
+  opacity: 0.7;
+  transition: opacity 0.2s, background 0.2s;
+}
+.group-tab-utility {
+  background: #0078d7;
+}
+.group-tab-modules {
+  background: #2eaf6a;
+}
+.group-tab.active {
+  opacity: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  z-index: 1;
+}
 .tab-header {
   display: flex;
   gap: 8px;

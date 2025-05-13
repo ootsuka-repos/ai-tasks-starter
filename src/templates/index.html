@@ -7,13 +7,22 @@
 </head>
 <body>
     <div class="tab-container">
-        <div class="tab-header">
-            <button class="tab-btn" data-tab="img" id="tab-img" type="button">画像生成</button>
-            <button class="tab-btn" data-tab="llm" id="tab-llm" type="button">LLM呼び出し</button>
-            <button class="tab-btn" data-tab="asr" id="tab-asr" type="button">音声認識</button>
+        <!-- 上位群タブ -->
+        <div class="group-tab-header">
+            <button class="group-tab group-tab-utility" id="group-tab-utility" type="button">utility</button>
+            <button class="group-tab group-tab-modules" id="group-tab-modules" type="button">modules</button>
+        </div>
+        <!-- 下位機能タブ: utility -->
+        <div class="tab-header" id="utility-tab-header">
             <button class="tab-btn" data-tab="gpu" id="tab-gpu" type="button">GPU情報</button>
             <button class="tab-btn" data-tab="hf-dl" id="tab-hf-dl" type="button">HFダウンロード</button>
             <button class="tab-btn" data-tab="hf-up" id="tab-hf-up" type="button">HFアップロード</button>
+        </div>
+        <!-- 下位機能タブ: modules -->
+        <div class="tab-header" id="modules-tab-header" style="display:none;">
+            <button class="tab-btn" data-tab="img" id="tab-img" type="button">画像生成</button>
+            <button class="tab-btn" data-tab="llm" id="tab-llm" type="button">LLM呼び出し</button>
+            <button class="tab-btn" data-tab="asr" id="tab-asr" type="button">音声認識</button>
         </div>
         <div class="tab-content" id="tab-content-img">
             <form id="img-form">
@@ -66,7 +75,23 @@
         </div>
     </div>
     <script>
-    // タブ切替
+    // 群タブ切替
+    const groupTabIds = ['utility', 'modules'];
+    groupTabIds.forEach(gid => {
+        document.getElementById('group-tab-' + gid).onclick = function() {
+            groupTabIds.forEach(ogid => {
+                document.getElementById('group-tab-' + ogid).classList.toggle('active', ogid === gid);
+                document.getElementById(ogid + '-tab-header').style.display = (ogid === gid) ? '' : 'none';
+            });
+            // utility選択時はutility系タブを、modules選択時はmodules系タブを表示
+            if (gid === 'utility') {
+                document.getElementById('tab-gpu').click();
+            } else {
+                document.getElementById('tab-img').click();
+            }
+        };
+    });
+    // 下位タブ切替
     const tabIds = ['img', 'llm', 'asr', 'gpu', 'hf-dl', 'hf-up'];
     tabIds.forEach(id => {
         document.getElementById('tab-' + id).onclick = function() {
@@ -76,6 +101,12 @@
             });
         };
     });
+    // 初期状態
+    document.getElementById('group-tab-utility').classList.add('active');
+    document.getElementById('utility-tab-header').style.display = '';
+    document.getElementById('modules-tab-header').style.display = 'none';
+    document.getElementById('tab-gpu').click();
+
     // 画像生成フォーム送信
     document.getElementById('img-form').onsubmit = async function(e) {
         e.preventDefault();
