@@ -11,6 +11,7 @@
         <div class="group-tab-header">
             <button class="group-tab group-tab-utility" id="group-tab-utility" type="button">utility</button>
             <button class="group-tab group-tab-modules" id="group-tab-modules" type="button">modules</button>
+            <button class="group-tab group-tab-imgutils" id="group-tab-imgutils" type="button">imgutils</button>
         </div>
         <!-- 下位機能タブ: utility -->
         <div class="tab-header" id="utility-tab-header">
@@ -23,6 +24,14 @@
             <button class="tab-btn" data-tab="img" id="tab-img" type="button">画像生成</button>
             <button class="tab-btn" data-tab="llm" id="tab-llm" type="button">LLM呼び出し</button>
             <button class="tab-btn" data-tab="asr" id="tab-asr" type="button">音声認識</button>
+        </div>
+        <!-- 下位機能タブ: imgutils -->
+        <div class="tab-header" id="imgutils-tab-header" style="display:none;">
+            <button class="tab-btn" data-tab="detect" id="tab-detect" type="button">画像検出</button>
+            <button class="tab-btn" data-tab="lineart" id="tab-lineart" type="button">線画抽出</button>
+            <button class="tab-btn" data-tab="classify" id="tab-classify" type="button">画像分類</button>
+            <button class="tab-btn" data-tab="camie-classify" id="tab-camie-classify" type="button">Camieタグ分類</button>
+            <button class="tab-btn" data-tab="segment" id="tab-segment" type="button">セグメント画像</button>
         </div>
         <div class="tab-content" id="tab-content-img">
             <form id="img-form">
@@ -47,6 +56,43 @@
                 <button type="submit" id="asr-submit">送信</button>
             </form>
             <div id="asr-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-detect" style="display:none;">
+            <form id="detect-form">
+                <label for="detect-file">画像ファイル:</label>
+                <input type="file" id="detect-file" name="image" accept="image/*">
+                <button type="submit" id="detect-submit">検出</button>
+            </form>
+            <div id="detect-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-lineart" style="display:none;">
+            <form id="lineart-form">
+                画像ファイル: <input type="file" id="lineart-file" name="image" accept="image/*">
+                <button type="submit" id="lineart-submit">抽出</button>
+            </form>
+            <div id="lineart-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-classify" style="display:none;">
+            <form id="classify-form">
+                画像ファイル: <input type="file" id="classify-file" name="image" accept="image/*">
+                <button type="submit" id="classify-submit">分類</button>
+            </form>
+            <div id="classify-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-camie-classify" style="display:none;">
+            <form id="camie-classify-form">
+                画像ファイル: <input type="file" id="camie-classify-file" name="image" accept="image/*">
+                <button type="submit" id="camie-classify-submit">Camieタグ分類</button>
+            </form>
+            <div id="camie-classify-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-segment" style="display:none;">
+            <form id="segment-form">
+                <label for="segment-file">画像ファイル:</label>
+                <input type="file" id="segment-file" name="image" accept="image/*">
+                <button type="submit" id="segment-submit">セグメント</button>
+            </form>
+            <div id="segment-result"></div>
         </div>
         <div class="tab-content" id="tab-content-gpu" style="display:none;">
             <button id="gpu-check-btn" type="button">GPU情報取得</button>
@@ -76,26 +122,34 @@
     </div>
     <script>
     // 群タブ切替
-    const groupTabIds = ['utility', 'modules'];
+    const groupTabIds = ['utility', 'modules', 'imgutils'];
     groupTabIds.forEach(gid => {
         document.getElementById('group-tab-' + gid).onclick = function() {
             groupTabIds.forEach(ogid => {
                 document.getElementById('group-tab-' + ogid).classList.toggle('active', ogid === gid);
                 document.getElementById(ogid + '-tab-header').style.display = (ogid === gid) ? '' : 'none';
             });
-            // utility選択時はutility系タブを、modules選択時はmodules系タブを表示
+            // 各群ごとに初期タブを選択
             if (gid === 'utility') {
                 document.getElementById('tab-gpu').click();
-            } else {
+            } else if (gid === 'modules') {
                 document.getElementById('tab-img').click();
+            } else if (gid === 'imgutils') {
+                document.getElementById('tab-detect').click();
             }
         };
     });
     // 下位タブ切替
-    const tabIds = ['img', 'llm', 'asr', 'gpu', 'hf-dl', 'hf-up'];
-    tabIds.forEach(id => {
+    const tabIdsByGroup = {
+        utility: ['gpu', 'hf-dl', 'hf-up'],
+        modules: ['img', 'llm', 'asr'],
+        imgutils: ['detect', 'lineart', 'classify', 'camie-classify', 'segment']
+    };
+    // 全タブIDリスト
+    const allTabIds = [].concat(...Object.values(tabIdsByGroup));
+    allTabIds.forEach(id => {
         document.getElementById('tab-' + id).onclick = function() {
-            tabIds.forEach(tid => {
+            allTabIds.forEach(tid => {
                 document.getElementById('tab-content-' + tid).style.display = (tid === id) ? '' : 'none';
                 document.getElementById('tab-' + tid).classList.toggle('active', tid === id);
             });
@@ -105,6 +159,7 @@
     document.getElementById('group-tab-utility').classList.add('active');
     document.getElementById('utility-tab-header').style.display = '';
     document.getElementById('modules-tab-header').style.display = 'none';
+    document.getElementById('imgutils-tab-header').style.display = 'none';
     document.getElementById('tab-gpu').click();
 
     // 画像生成フォーム送信
@@ -199,6 +254,115 @@
             const data = await res.json();
             document.getElementById('asr-result').innerText = data.text || (data.error || '認識失敗');
         };
+    // 画像検出フォーム送信
+    document.getElementById('detect-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('detect-file');
+        if (!fileInput.files.length) {
+            document.getElementById('detect-result').innerText = '画像ファイルを選択してください';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        const res = await fetch('/detect-image', { method: 'POST', body: formData });
+        if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            document.getElementById('detect-result').innerHTML = `<img src="${url}" style="max-width:256px;">`;
+        } else {
+            document.getElementById('detect-result').innerText = '検出失敗';
+        }
+    };
+    // 線画抽出フォーム送信
+    document.getElementById('lineart-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('lineart-file');
+        if (!fileInput.files.length) {
+            document.getElementById('lineart-result').innerText = '画像ファイルを選択してください';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        const res = await fetch('/lineart-image', { method: 'POST', body: formData });
+        if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            document.getElementById('lineart-result').innerHTML = `<img src="${url}" style="max-width:256px;">`;
+        } else {
+            document.getElementById('lineart-result').innerText = '抽出失敗';
+        }
+    };
+
+    // 画像分類フォーム送信
+    document.getElementById('classify-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('classify-file');
+        if (!fileInput.files.length) {
+            document.getElementById('classify-result').innerText = '画像ファイルを選択してください';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        const res = await fetch('/classify-image', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.label) {
+            document.getElementById('classify-result').innerText = `分類ラベル: ${data.label}`;
+        } else {
+            document.getElementById('classify-result').innerText = data.error || '分類失敗';
+        }
+    };
+    // Camieタグ分類フォーム送信
+    document.getElementById('camie-classify-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('camie-classify-file');
+        if (!fileInput.files.length) {
+            document.getElementById('camie-classify-result').innerText = '画像ファイルを選択してください';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        const res = await fetch('/classify-image-camie', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.rating !== undefined && data.tags !== undefined && data.chars !== undefined) {
+            function renderObj(obj) {
+                if (obj === null || obj === undefined) return '';
+                if (Array.isArray(obj)) return obj.join(', ');
+                if (typeof obj === 'object') {
+                    return `<table style="border-collapse:collapse;">${
+                        Object.entries(obj).map(([k,v]) =>
+                            `<tr><td style="border:1px solid #ccc;padding:2px 6px;">${k}</td><td style="border:1px solid #ccc;padding:2px 6px;">${v}</td></tr>`
+                        ).join('')
+                    }</table>`;
+                }
+                return obj;
+            }
+            document.getElementById('camie-classify-result').innerHTML =
+                `<div>Rating: ${renderObj(data.rating)}</div>
+                <div>Tags: ${renderObj(data.tags)}</div>
+                <div>Chars: ${renderObj(data.chars)}</div>`;
+        } else {
+            document.getElementById('camie-classify-result').innerText = data.error || '分類失敗';
+        }
+    };
+    // セグメント画像フォーム送信
+    document.getElementById('segment-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('segment-file');
+        if (!fileInput.files.length) {
+            document.getElementById('segment-result').innerText = '画像ファイルを選択してください';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        const res = await fetch('/segment-image', { method: 'POST', body: formData });
+        if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            document.getElementById('segment-result').innerHTML = `<img src="${url}" style="max-width:256px;">`;
+        } else {
+            document.getElementById('segment-result').innerText = 'セグメント失敗';
+        }
+    };
     </script>
     </body>
     </html>

@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 
-from fastapi import FastAPI, Body
+from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 from modules.openrouter import run_openrouter
 from fastapi.responses import FileResponse
@@ -134,6 +134,95 @@ async def asr(audio: UploadFile = File(...), model: str = Form(...)):
             tmp_path = tmp.name
         text = transcribe_audio(tmp_path, model)
         return {"text": text}
+    except Exception as e:
+        return {"error": str(e)}
+
+# 画像検出API
+from modules.image_utils import detect_and_draw_boxes, extract_lineart, segment_image_with_isnetis
+
+@app.post("/detect-image")
+async def detect_image(image: UploadFile = File(...)):
+    import tempfile
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            content = await image.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        output_path = tmp_path.replace(".jpg", "_detected.jpg")
+        detect_and_draw_boxes(tmp_path, output_path)
+        return FileResponse(
+            output_path,
+            media_type="image/jpeg",
+            filename="detected.jpg"
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+# 線画抽出API
+@app.post("/lineart-image")
+async def lineart_image(image: UploadFile = File(...)):
+    import tempfile
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            content = await image.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        output_path = tmp_path.replace(".jpg", "_lineart.jpg")
+        extract_lineart(tmp_path, output_path)
+        return FileResponse(
+            output_path,
+            media_type="image/jpeg",
+            filename="lineart.jpg"
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+# セグメント画像API
+@app.post("/segment-image")
+async def segment_image_api(image: UploadFile = File(...)):
+    import tempfile
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+            content = await image.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        output_path = tmp_path.replace(".png", "_seg.png")
+        segment_image_with_isnetis(tmp_path, output_path)
+        return FileResponse(
+            output_path,
+            media_type="image/png",
+            filename="segmented.png"
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+# 画像分類API
+from modules.image_utils import classify_image, classify_image_camie
+
+@app.post("/classify-image")
+async def classify_image_api(image: UploadFile = File(...)):
+    import tempfile
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            content = await image.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        label = classify_image(tmp_path)
+        return {"label": label}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Camieタグ分類API
+@app.post("/classify-image-camie")
+async def classify_image_camie_api(image: UploadFile = File(...)):
+    import tempfile
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            content = await image.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        result = classify_image_camie(tmp_path)
+        return result
     except Exception as e:
         return {"error": str(e)}
 
