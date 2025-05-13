@@ -1,7 +1,7 @@
 import torch
 from transformers import pipeline
 
-def transcribe_audio(audio_path: str) -> str:
+def transcribe_audio(audio_path: str, model_name: str) -> str:
     generate_kwargs = {
         "language": "Japanese",
         "no_repeat_ngram_size": 0,
@@ -9,7 +9,7 @@ def transcribe_audio(audio_path: str) -> str:
     }
     pipe = pipeline(
         "automatic-speech-recognition",
-        model="litagin/anime-whisper",
+        model=model_name,
         device="cuda" if torch.cuda.is_available() else "cpu",
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
         chunk_length_s=30.0,
@@ -20,5 +20,6 @@ def transcribe_audio(audio_path: str) -> str:
 
 if __name__ == "__main__":
     audio_path = "assets/test_audio.wav"
-    text = transcribe_audio(audio_path)
+    model_name = "litagin/anime-whisper"
+    text = transcribe_audio(audio_path, model_name)
     print(text)

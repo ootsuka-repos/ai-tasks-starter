@@ -10,12 +10,14 @@
         <div class="tab-header">
             <button class="tab-btn" data-tab="img" id="tab-img" type="button">画像生成</button>
             <button class="tab-btn" data-tab="llm" id="tab-llm" type="button">LLM呼び出し</button>
-        <button class="tab-btn" data-tab="gpu" id="tab-gpu" type="button">GPU情報</button>
-        <button class="tab-btn" data-tab="hf-dl" id="tab-hf-dl" type="button">HFダウンロード</button>
-        <button class="tab-btn" data-tab="hf-up" id="tab-hf-up" type="button">HFアップロード</button>
+            <button class="tab-btn" data-tab="asr" id="tab-asr" type="button">音声認識</button>
+            <button class="tab-btn" data-tab="gpu" id="tab-gpu" type="button">GPU情報</button>
+            <button class="tab-btn" data-tab="hf-dl" id="tab-hf-dl" type="button">HFダウンロード</button>
+            <button class="tab-btn" data-tab="hf-up" id="tab-hf-up" type="button">HFアップロード</button>
         </div>
         <div class="tab-content" id="tab-content-img">
             <form id="img-form">
+                モデル名: <input type="text" id="img-model" name="model" value="{{ image_model }}">
                 プロンプト: <input type="text" id="img-prompt" name="prompt">
                 <button type="submit">生成</button>
             </form>
@@ -23,10 +25,19 @@
         </div>
         <div class="tab-content" id="tab-content-llm" style="display:none;">
             <form id="llm-form">
+                モデル名: <input type="text" id="llm-model" name="model" value="{{ llm_model }}">
                 プロンプト: <input type="text" id="llm-prompt" name="prompt">
                 <button type="submit">送信</button>
             </form>
             <div id="llm-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-asr" style="display:none;">
+            <form id="asr-form">
+                モデル名: <input type="text" id="asr-model" name="model" value="{{ speech_model }}">
+                音声ファイル: <input type="file" id="asr-file" name="audio" accept="audio/*">
+                <button type="submit" id="asr-submit">送信</button>
+            </form>
+            <div id="asr-result"></div>
         </div>
         <div class="tab-content" id="tab-content-gpu" style="display:none;">
             <button id="gpu-check-btn" type="button">GPU情報取得</button>
@@ -56,7 +67,7 @@
     </div>
     <script>
     // タブ切替
-    const tabIds = ['img', 'llm', 'gpu', 'hf-dl', 'hf-up'];
+    const tabIds = ['img', 'llm', 'asr', 'gpu', 'hf-dl', 'hf-up'];
     tabIds.forEach(id => {
         document.getElementById('tab-' + id).onclick = function() {
             tabIds.forEach(tid => {
@@ -69,10 +80,11 @@
     document.getElementById('img-form').onsubmit = async function(e) {
         e.preventDefault();
         const prompt = document.getElementById('img-prompt').value;
+        const model = document.getElementById('img-model').value;
         const res = await fetch('/generate-image', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt})
+            body: JSON.stringify({prompt, model})
         });
         if (res.ok) {
             const blob = await res.blob();
@@ -86,10 +98,11 @@
     document.getElementById('llm-form').onsubmit = async function(e) {
         e.preventDefault();
         const prompt = document.getElementById('llm-prompt').value;
+        const model = document.getElementById('llm-model').value;
         const res = await fetch('/llm', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt})
+            body: JSON.stringify({prompt, model})
         });
         const data = await res.json();
         document.getElementById('llm-result').innerText = data.result || '失敗';
@@ -139,6 +152,22 @@
         const data = await res.json();
         document.getElementById('hf-up-result').innerText = data.result || (data.error || '失敗');
     };
+        // 音声認識（ファイルアップロード）
+        document.getElementById('asr-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('asr-file');
+            const model = document.getElementById('asr-model').value;
+            if (!fileInput.files.length) {
+                document.getElementById('asr-result').innerText = '音声ファイルを選択してください';
+                return;
+            }
+            const formData = new FormData();
+            formData.append('audio', fileInput.files[0]);
+            formData.append('model', model);
+            const res = await fetch('/asr', { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('asr-result').innerText = data.text || (data.error || '認識失敗');
+        };
     </script>
-</body>
-</html>
+    </body>
+    </html>

@@ -69,7 +69,12 @@ async def llm_endpoint(request: Request):
 async def root(request: Request):
     return templates.TemplateResponse(
         os.environ.get("INDEX_TEMPLATE", "index.html"),
-        {"request": request}
+        {
+            "request": request,
+            "llm_model": os.environ.get("LLM_MODEL_NAME", ""),
+            "image_model": os.environ.get("IMAGE_GEN_MODEL_NAME", ""),
+            "speech_model": os.environ.get("SPEECH_MODEL_NAME", "")
+        }
     )
 # HuggingFaceアップロードAPI
 from pydantic import BaseModel
@@ -112,6 +117,23 @@ from utility.gpu_check import get_gpu_info
 async def gpu_check():
     try:
         return get_gpu_info()
+    except Exception as e:
+        return {"error": str(e)}
+
+# 音声認識API
+from fastapi import UploadFile, File, Form
+from modules.speech_recognizer import transcribe_audio
+import tempfile
+
+@app.post("/asr")
+async def asr(audio: UploadFile = File(...), model: str = Form(...)):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            content = await audio.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        text = transcribe_audio(tmp_path, model)
+        return {"text": text}
     except Exception as e:
         return {"error": str(e)}
 
