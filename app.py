@@ -7,6 +7,7 @@ from api_code.openrouter import run_openrouter
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from modules.image_generator import ImageGenerationService, StableDiffusionImageGenerator
+import secrets
 
 load_dotenv(dotenv_path="./.env")
 
@@ -37,11 +38,10 @@ image_service = ImageGenerationService(StableDiffusionImageGenerator())
 async def generate_image_endpoint(request: GenerateImageRequest):
     try:
         import datetime
-        import random
         output_dir = "outputs"
         os.makedirs(output_dir, exist_ok=True)
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        rand = random.randint(1000, 9999)
+        rand = secrets.SystemRandom().randint(1000, 9999)
         filename = f"generated_{timestamp}_{rand}.png"
         output_path = os.path.join(output_dir, filename)
         image_service.generate_image(request.prompt, output_path=output_path)
