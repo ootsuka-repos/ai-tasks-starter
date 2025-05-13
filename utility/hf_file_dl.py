@@ -2,8 +2,8 @@ import os
 from huggingface_hub import snapshot_download
 from dotenv import load_dotenv
 
-def download_model(model_name: str):
-    return snapshot_download(model_name)
+def download_model(repo_id: str):
+    return snapshot_download(repo_id)
 
 if __name__ == "__main__":
     load_dotenv(dotenv_path="./.env")

@@ -2,15 +2,19 @@ import os
 from huggingface_hub import login, HfApi, create_repo
 from dotenv import load_dotenv
 
-def upload_folder_to_hf(token, repo_id, repo_type, private, folder_path, path_in_repo):
+def upload_folder_to_hf(repo_type, private, folder_path, path_in_repo):
+    # 環境変数からtoken取得、repo_idはpath_in_repoをそのまま使う
+    token = os.getenv("HF_TOKEN")
+    if not token or not path_in_repo:
+        raise ValueError("HF_TOKEN, path_in_repoが必要です")
+    repo_id = path_in_repo  # 入力値をそのままリポジトリ名として使う
     login(token=token)
     create_repo(repo_id, repo_type=repo_type, private=private)
     api = HfApi()
     api.upload_folder(
         folder_path=folder_path,
         repo_id=repo_id,
-        repo_type=repo_type,
-        path_in_repo=path_in_repo
+        repo_type=repo_type
     )
 
 if __name__ == "__main__":

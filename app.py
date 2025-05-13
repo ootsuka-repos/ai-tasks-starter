@@ -75,8 +75,6 @@ async def root(request: Request):
 from pydantic import BaseModel
 
 class HFUploadRequest(BaseModel):
-    token: str
-    repo_id: str
     repo_type: str
     private: bool
     folder_path: str
@@ -86,8 +84,6 @@ class HFUploadRequest(BaseModel):
 async def hf_file_up(req: HFUploadRequest):
     try:
         upload_folder_to_hf(
-            req.token,
-            req.repo_id,
             req.repo_type,
             req.private,
             req.folder_path,
@@ -97,10 +93,15 @@ async def hf_file_up(req: HFUploadRequest):
     except Exception as e:
         return {"error": str(e)}
 # HuggingFaceモデルダウンロードAPI
+from pydantic import BaseModel
+
+class HFDownloadRequest(BaseModel):
+    repo_id: str
+
 @app.post("/utility/hf_file_dl")
-async def hf_file_dl(model_name: str = Body(..., embed=True)):
+async def hf_file_dl(req: HFDownloadRequest):
     try:
-        path = download_model(model_name)
+        path = download_model(req.repo_id)
         return {"model_path": path}
     except Exception as e:
         return {"error": str(e)}

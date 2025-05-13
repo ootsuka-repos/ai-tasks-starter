@@ -34,18 +34,20 @@
         </div>
         <div class="tab-content" id="tab-content-hf-dl" style="display:none;">
             <form id="hf-dl-form">
-                モデル名: <input type="text" id="hf-dl-model" name="model_name">
+                リポジトリ名: <input type="text" id="hf-dl-repo-id" name="repo_id">
                 <button type="submit">ダウンロード</button>
             </form>
             <div id="hf-dl-result"></div>
         </div>
         <div class="tab-content" id="tab-content-hf-up" style="display:none;">
             <form id="hf-up-form">
-                token: <input type="text" id="hf-up-token" name="token"><br>
-                repo_id: <input type="text" id="hf-up-repo-id" name="repo_id"><br>
-                repo_type: <input type="text" id="hf-up-repo-type" name="repo_type" value="dataset"><br>
+                repo_type:
+                <select id="hf-up-repo-type" name="repo_type">
+                    <option value="model">モデル</option>
+                    <option value="dataset">データセット</option>
+                </select><br>
                 private: <input type="checkbox" id="hf-up-private" name="private" checked><br>
-                folder_path: <input type="text" id="hf-up-folder" name="folder_path"><br>
+                フォルダ: <input type="file" id="hf-up-folder" name="folder_path" webkitdirectory directory><br>
                 path_in_repo: <input type="text" id="hf-up-path" name="path_in_repo"><br>
                 <button type="submit">アップロード</button>
             </form>
@@ -105,11 +107,11 @@
     // HFダウンロード
     document.getElementById('hf-dl-form').onsubmit = async function(e) {
         e.preventDefault();
-        const model_name = document.getElementById('hf-dl-model').value;
+        const repo_id = document.getElementById('hf-dl-repo-id').value;
         const res = await fetch('/utility/hf_file_dl', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({model_name})
+            body: JSON.stringify({repo_id})
         });
         const data = await res.json();
         document.getElementById('hf-dl-result').innerText = data.model_path ? `ダウンロード先: ${data.model_path}` : (data.error || '失敗');
@@ -118,16 +120,21 @@
     // HFアップロード
     document.getElementById('hf-up-form').onsubmit = async function(e) {
         e.preventDefault();
-        const token = document.getElementById('hf-up-token').value;
-        const repo_id = document.getElementById('hf-up-repo-id').value;
         const repo_type = document.getElementById('hf-up-repo-type').value;
         const private_ = document.getElementById('hf-up-private').checked;
-        const folder_path = document.getElementById('hf-up-folder').value;
+        const folderInput = document.getElementById('hf-up-folder');
+        const files = folderInput.files;
+        if (!files.length) {
+            document.getElementById('hf-up-result').innerText = 'フォルダを選択してください';
+            return;
+        }
+        // 最初のファイルのパスからフォルダパスを推定
+        const folder_path = files[0].webkitRelativePath.split('/')[0];
         const path_in_repo = document.getElementById('hf-up-path').value;
         const res = await fetch('/utility/hf_file_up', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({token, repo_id, repo_type, private: private_, folder_path, path_in_repo})
+            body: JSON.stringify({repo_type, private: private_, folder_path, path_in_repo})
         });
         const data = await res.json();
         document.getElementById('hf-up-result').innerText = data.result || (data.error || '失敗');
