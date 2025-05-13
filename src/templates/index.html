@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>画像生成 & LLM UI</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+    <div class="tab-container">
+        <div class="tab-header">
+            <button class="tab-btn" data-tab="img" id="tab-img" type="button">画像生成</button>
+            <button class="tab-btn" data-tab="llm" id="tab-llm" type="button">LLM呼び出し</button>
+        <button class="tab-btn" data-tab="gpu" id="tab-gpu" type="button">GPU情報</button>
+        <button class="tab-btn" data-tab="hf-dl" id="tab-hf-dl" type="button">HFダウンロード</button>
+        <button class="tab-btn" data-tab="hf-up" id="tab-hf-up" type="button">HFアップロード</button>
+        </div>
+        <div class="tab-content" id="tab-content-img">
+            <form id="img-form">
+                プロンプト: <input type="text" id="img-prompt" name="prompt">
+                <button type="submit">生成</button>
+            </form>
+            <div id="img-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-llm" style="display:none;">
+            <form id="llm-form">
+                プロンプト: <input type="text" id="llm-prompt" name="prompt">
+                <button type="submit">送信</button>
+            </form>
+            <div id="llm-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-gpu" style="display:none;">
+            <button id="gpu-check-btn" type="button">GPU情報取得</button>
+            <pre id="gpu-result"></pre>
+        </div>
+        <div class="tab-content" id="tab-content-hf-dl" style="display:none;">
+            <form id="hf-dl-form">
+                モデル名: <input type="text" id="hf-dl-model" name="model_name">
+                <button type="submit">ダウンロード</button>
+            </form>
+            <div id="hf-dl-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-hf-up" style="display:none;">
+            <form id="hf-up-form">
+                token: <input type="text" id="hf-up-token" name="token"><br>
+                repo_id: <input type="text" id="hf-up-repo-id" name="repo_id"><br>
+                repo_type: <input type="text" id="hf-up-repo-type" name="repo_type" value="dataset"><br>
+                private: <input type="checkbox" id="hf-up-private" name="private" checked><br>
+                folder_path: <input type="text" id="hf-up-folder" name="folder_path"><br>
+                path_in_repo: <input type="text" id="hf-up-path" name="path_in_repo"><br>
+                <button type="submit">アップロード</button>
+            </form>
+            <div id="hf-up-result"></div>
+        </div>
+    </div>
+    <script>
+    // タブ切替
+    const tabIds = ['img', 'llm', 'gpu', 'hf-dl', 'hf-up'];
+    tabIds.forEach(id => {
+        document.getElementById('tab-' + id).onclick = function() {
+            tabIds.forEach(tid => {
+                document.getElementById('tab-content-' + tid).style.display = (tid === id) ? '' : 'none';
+                document.getElementById('tab-' + tid).classList.toggle('active', tid === id);
+            });
+        };
+    });
+    // 画像生成フォーム送信
+    document.getElementById('img-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const prompt = document.getElementById('img-prompt').value;
+        const res = await fetch('/generate-image', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            document.getElementById('img-result').innerHTML = `<img src="${url}" style="max-width:256px;">`;
+        } else {
+            document.getElementById('img-result').innerText = '生成失敗';
+        }
+    };
+    // LLMフォーム送信
+    document.getElementById('llm-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const prompt = document.getElementById('llm-prompt').value;
+        const res = await fetch('/llm', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        const data = await res.json();
+        document.getElementById('llm-result').innerText = data.result || '失敗';
+    };
+    // 初期タブ
+    document.getElementById('tab-img').classList.add('active');
+
+    // GPU情報取得
+    document.getElementById('gpu-check-btn').onclick = async function() {
+        const res = await fetch('/utility/gpu_check');
+        const data = await res.json();
+        document.getElementById('gpu-result').innerText = JSON.stringify(data, null, 2);
+    };
+
+    // HFダウンロード
+    document.getElementById('hf-dl-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const model_name = document.getElementById('hf-dl-model').value;
+        const res = await fetch('/utility/hf_file_dl', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({model_name})
+        });
+        const data = await res.json();
+        document.getElementById('hf-dl-result').innerText = data.model_path ? `ダウンロード先: ${data.model_path}` : (data.error || '失敗');
+    };
+
+    // HFアップロード
+    document.getElementById('hf-up-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const token = document.getElementById('hf-up-token').value;
+        const repo_id = document.getElementById('hf-up-repo-id').value;
+        const repo_type = document.getElementById('hf-up-repo-type').value;
+        const private_ = document.getElementById('hf-up-private').checked;
+        const folder_path = document.getElementById('hf-up-folder').value;
+        const path_in_repo = document.getElementById('hf-up-path').value;
+        const res = await fetch('/utility/hf_file_up', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({token, repo_id, repo_type, private: private_, folder_path, path_in_repo})
+        });
+        const data = await res.json();
+        document.getElementById('hf-up-result').innerText = data.result || (data.error || '失敗');
+    };
+    </script>
+</body>
+</html>
