@@ -7,6 +7,7 @@ from modules.openrouter import run_openrouter
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from modules.image_generator import ImageGenerationService, StableDiffusionImageGenerator
+from modules.text_classifier import Config as TextConfig, TextClassifier
 
 load_dotenv(dotenv_path="./.env")
 
@@ -30,8 +31,22 @@ from fastapi.responses import HTMLResponse, JSONResponse
 class GenerateImageRequest(BaseModel):
     prompt: str
 
+class TextClassifyRequest(BaseModel):
+    text: str
+
 # サービス層のインスタンスを生成（グローバルで1つでOK）
 image_service = ImageGenerationService(StableDiffusionImageGenerator())
+
+# テキスト分類器インスタンス（グローバルで1つ）
+text_classifier = TextClassifier(TextConfig())
+
+@app.post("/classify-text")
+async def classify_text_endpoint(request: TextClassifyRequest):
+    try:
+        result = text_classifier.classify_text(request.text)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/generate-image")
 async def generate_image_endpoint(request: GenerateImageRequest):

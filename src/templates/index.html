@@ -24,6 +24,7 @@
             <button class="tab-btn" data-tab="img" id="tab-img" type="button">画像生成</button>
             <button class="tab-btn" data-tab="llm" id="tab-llm" type="button">LLM呼び出し</button>
             <button class="tab-btn" data-tab="asr" id="tab-asr" type="button">音声認識</button>
+            <button class="tab-btn" data-tab="textcls" id="tab-textcls" type="button">テキスト分類</button>
         </div>
         <!-- 下位機能タブ: imgutils -->
         <div class="tab-header" id="imgutils-tab-header" style="display:none;">
@@ -56,6 +57,14 @@
                 <button type="submit" id="asr-submit">送信</button>
             </form>
             <div id="asr-result"></div>
+        </div>
+        <div class="tab-content" id="tab-content-textcls" style="display:none;">
+            <form id="textcls-form">
+                <label for="textcls-input">テキスト:</label>
+                <input type="text" id="textcls-input" name="text" style="width:60%;">
+                <button type="submit" id="textcls-submit">分類</button>
+            </form>
+            <div id="textcls-result"></div>
         </div>
         <div class="tab-content" id="tab-content-detect" style="display:none;">
             <form id="detect-form">
@@ -142,8 +151,32 @@
     // 下位タブ切替
     const tabIdsByGroup = {
         utility: ['gpu', 'hf-dl', 'hf-up'],
-        modules: ['img', 'llm', 'asr'],
+        modules: ['img', 'llm', 'asr', 'textcls'],
         imgutils: ['detect', 'lineart', 'classify', 'camie-classify', 'segment']
+    };
+    // テキスト分類フォーム送信
+    document.getElementById('textcls-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const text = document.getElementById('textcls-input').value;
+        const res = await fetch('/classify-text', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text})
+        });
+        const data = await res.json();
+        if (data.label) {
+            let html = `分類ラベル: <b>${data.label}</b><br>`;
+            if (data.probs) {
+                html += '確率プレビュー:<br><table style="border-collapse:collapse;">';
+                for (const [label, prob] of Object.entries(data.probs)) {
+                    html += `<tr><td style="border:1px solid #ccc;padding:2px 8px;">${label}</td><td style="border:1px solid #ccc;padding:2px 8px;">${prob}</td></tr>`;
+                }
+                html += '</table>';
+            }
+            document.getElementById('textcls-result').innerHTML = html;
+        } else {
+            document.getElementById('textcls-result').innerText = data.error || '分類失敗';
+        }
     };
     // 全タブIDリスト
     const allTabIds = [].concat(...Object.values(tabIdsByGroup));
