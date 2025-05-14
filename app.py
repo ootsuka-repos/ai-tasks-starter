@@ -111,7 +111,7 @@ async def hf_file_dl(req: HFDownloadRequest):
     except Exception as e:
         return {"error": str(e)}
 # GPU情報取得API
-from utility.gpu_check import get_gpu_info
+from modules.utility.gpu_check import get_gpu_info
 
 @app.get("/utility/gpu_check")
 async def gpu_check():
@@ -230,11 +230,11 @@ async def classify_image_camie_api(image: UploadFile = File(...)):
 if __name__ == "__main__":
 # GPU情報のデバッグ出力
     try:
-        from utility.gpu_check import get_gpu_info
+        from modules.utility.gpu_check import get_gpu_info
         print("GPU INFO:", get_gpu_info())
     except Exception as e:
         print("GPU INFO取得失敗:", e)
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-from utility.hf_file_dl import download_model
-from utility.hf_file_up import upload_folder_to_hf
+from modules.utility.hf_file_dl import download_model
+from modules.utility.hf_file_up import upload_folder_to_hf
